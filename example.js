@@ -69,7 +69,6 @@ var run = function () {
 
         server.once('close', function () {
           // server fully closed.
-          console.log('dsdsd');
           clearTimeout(timeout);
           process.send(FULLY_CLOSED);
         });
