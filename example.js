@@ -9,6 +9,7 @@ var os = require('os');
 var cpuNums = os.cpus().length;
 
 var GRACEFUL_SHUT = 'graceful_shutdown';
+var FULLY_CLOSED = 'fully_closed';
 
 var server = require('./server');
 
@@ -43,11 +44,15 @@ var run = function () {
         // Tell worker doesn't accept new connection.
         cluster.workers[id].send(GRACEFUL_SHUT);
 
-        // Worker kills itself.
-        cluster.workers[id].kill();
+        cluster.workers[id].on('message', function (msg) {
+          if (msg === FULLY_CLOSED) {
+            // Worker kills itself.
+            cluster.workers[id].kill();
 
-        // Reload.
-        cluster.fork();
+            // Reload.
+            cluster.fork();
+          }
+        });
       });
     });
 
@@ -57,6 +62,18 @@ var run = function () {
     process.on('message', function (msg) {
       // If msg is equal GRACEFUL_SHUT, worker graceful restarts.
       if (msg === GRACEFUL_SHUT) {
+        // Set timeout to force worker reload.
+        var timeout = setTimeout(function () {
+          process.send(FULLY_CLOSED);
+        }, 100000);
+
+        server.once('close', function () {
+          // server fully closed.
+          console.log('dsdsd');
+          clearTimeout(timeout);
+          process.send(FULLY_CLOSED);
+        });
+
         // server starts to refuse accept new connection.
         server.close();
       }
