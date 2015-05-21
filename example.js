@@ -62,6 +62,9 @@ var run = function () {
     process.on('message', function (msg) {
       // If msg is equal GRACEFUL_SHUT, worker graceful restarts.
       if (msg === GRACEFUL_SHUT) {
+        // server starts to refuse accept new connection.
+        server.close();
+
         // Set timeout to force worker reload.
         var timeout = setTimeout(function () {
           process.send(FULLY_CLOSED);
@@ -72,9 +75,6 @@ var run = function () {
           clearTimeout(timeout);
           process.send(FULLY_CLOSED);
         });
-
-        // server starts to refuse accept new connection.
-        server.close();
       }
     });
   }
